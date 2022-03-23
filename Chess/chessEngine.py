@@ -58,10 +58,10 @@ class GameState():
                 if r == 6 and self.board[r-2][c] == "--":
                     moves.append(Move((r,c),(r-2,c),self.board))
             if c-1 >= 0:
-                if self.board[r+1][c-1][0] == 'b': # Enemy piece capture
+                if self.board[r-1][c-1][0] == 'b': # Enemy piece capture
                     moves.append(Move((r,c),(r-1,c-1),self.board))
             if c+1 < 8:
-                if self.board[r+1][c+1][0] == 'b': # Enemy piece capture
+                if self.board[r-1][c+1][0] == 'b': # Enemy piece capture
                     moves.append(Move((r,c),(r-1,c+1),self.board))
 
         else:
