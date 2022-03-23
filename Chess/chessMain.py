@@ -1,4 +1,5 @@
 import pygame as p
+
 import chessEngine
 
 p.init()
@@ -37,10 +38,12 @@ p.display.set_caption("CHESS")
 icon = p.image.load("Images/chess.png")
 p.display.set_icon(icon)
 
-screen = p.display.set_mode((WIDTH,HEIGHT+100))
+screen = p.display.set_mode((WIDTH, HEIGHT + 100))
 clock = p.time.Clock()
 screen.fill(p.Color("white"))
 gs = chessEngine.GameState()
+validMoves = gs.getValidMoves()
+moveMade = False  # flag variable for when a move is made
 load_images()
 running = True
 sqSelected = ()
@@ -55,19 +58,30 @@ while running:
             location = p.mouse.get_pos()
             col = location[0] // SQ_SIZE
             row = location[1] // SQ_SIZE
-            if sqSelected == (row,col): # if same player clicked twice
-                sqSelected = ()     # deselect
-                playerClicks = []   # Clear the player click
+            if sqSelected == (row, col):  # if same player clicked twice
+                sqSelected = ()  # deselect
+                playerClicks = []  # Clear the player click
             else:
-                sqSelected = (row,col)
+                sqSelected = (row, col)
                 playerClicks.append(sqSelected)
             if len(playerClicks) == 2:
-                move = chessEngine.Move(playerClicks[0],playerClicks[1],gs.board)
+                move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
                 print(move.getChessNotation())
-                gs.makeMove(move)
-                sqSelected = () # reset to default
-                playerClicks = [] # reset to default
-            sqSelected = (row,col)
-    draw_game_state(screen,gs)
+                if move in validMoves:
+                    gs.makeMove(move)
+                    moveMade = True
+                sqSelected = ()  # reset to default
+                playerClicks = []  # reset to default
+
+        elif event.type == p.KEYDOWN:
+            if event.key == p.K_z:
+                gs.undoMove()
+                moveMade = True
+
+    if moveMade:
+        validMoves = gs.getValidMoves()
+        moveMade = False
+
+    draw_game_state(screen, gs)
     clock.tick(MAX_FPS)
     p.display.flip()
