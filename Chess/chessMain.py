@@ -14,8 +14,9 @@ IMAGES = {}
 
 p.display.set_caption("CHESS")
 icon = p.image.load("Images/chess.png")
-p.display.set_icon(icon)
 
+p.display.set_icon(icon)
+bg = p.transform.scale(p.image.load("Images/background.jpg"),(WIDTH,HEIGHT+100))
 screen = p.display.set_mode((WIDTH, HEIGHT + 100))
 
 screen.fill(p.Color("white"))
@@ -97,6 +98,7 @@ def sgame():
                     moveMade = True
                 elif event.key == p.K_ESCAPE:
                     running = False
+                    main_menu()
 
         if moveMade:
             validMoves = gs.getValidMoves()
@@ -114,13 +116,15 @@ def mgame():
 
 def text():
     font = p.font.Font('freesansbold.ttf', 16)
-    s_player = font.render(" HUMAN VS COMPUTER - Press '1' Key", True, (0, 0, 0))
-    m_player = font.render(" HUMAN VS HUMAN - Press '2' Key", True, (0, 0, 0))
+    s_player = font.render(" HUMAN VS COMPUTER - Press '1' Key", True, (255, 255, 255))
+    m_player = font.render(" HUMAN VS HUMAN - Press '2' Key", True, (255, 255, 255))
     screen.blit(s_player, (20, 100))
-    screen.blit(m_player, (20, 150))
+    screen.blit(m_player, (20, 130))
 
 
 def main_menu():
+    screen.fill((0, 0, 0))
+    screen.blit(bg, (0, 0))
     while True:
         for event in p.event.get():
             if event.type == p.QUIT:
@@ -133,7 +137,6 @@ def main_menu():
                 if event.key == p.K_KP2:
                     mgame()
 
-        screen.fill((255, 255, 255))
         text()
         clock.tick(15)
         p.display.flip()
