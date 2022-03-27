@@ -16,8 +16,8 @@ p.display.set_caption("CHESS")
 icon = p.image.load("Images/chess.png")
 
 p.display.set_icon(icon)
-bg = p.transform.scale(p.image.load("Images/background.jpg"),(WIDTH,HEIGHT+100))
-screen = p.display.set_mode((WIDTH, HEIGHT + 100))
+bg = p.transform.scale(p.image.load("Images/background.jpg"), (WIDTH + 200, HEIGHT))
+screen = p.display.set_mode((WIDTH + 200, HEIGHT))
 
 screen.fill(p.Color("white"))
 gs = chessEngine.GameState()
