@@ -75,7 +75,7 @@ def sgame():
                 location = p.mouse.get_pos()
                 col = location[0] // SQ_SIZE
                 row = location[1] // SQ_SIZE
-                if sqSelected == (row, col):  # if same player clicked twice
+                if sqSelected == (row, col):  # if same place clicked twice
                     sqSelected = ()  # deselect
                     playerClicks = []  # Clear the player click
                 else:
@@ -83,7 +83,6 @@ def sgame():
                     playerClicks.append(sqSelected)
                 if len(playerClicks) == 2:
                     move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
-                    print(move.getChessNotation())
                     for i in range(len(validMoves)):
                         if move == validMoves[i]:
                             gs.makeMove(validMoves[i])
