@@ -17,7 +17,7 @@ icon = p.image.load("Images/chess.png")
 
 p.display.set_icon(icon)
 bg = p.transform.scale(p.image.load("Images/background.jpg"), (WIDTH + 200, HEIGHT))
-screen = p.display.set_mode((WIDTH + 200, HEIGHT))
+screen = p.display.set_mode((WIDTH, HEIGHT))
 
 screen.fill(p.Color("white"))
 gs = chessEngine.GameState()
@@ -35,6 +35,7 @@ def load_images():
 
 
 def drawboard(screen):
+    global colors
     colors = [p.Color((92, 64, 51)), p.Color((186, 140, 99))]
 
     for r in range(DIMENSION):
@@ -51,9 +52,45 @@ def draw_pieces(screen, board):
                 screen.blit(IMAGES[piece], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
-def draw_game_state(screen, gs):
+def highlightsquares(screen, gs, valid_moves, sq_selected):
+    if sq_selected != ():
+        r, c = sq_selected
+        if gs.board[r][c][0] == ('w' if gs.whiteToMove else 'b'):
+            s = p.Surface((SQ_SIZE, SQ_SIZE))
+            s.set_alpha(100)
+            s.fill(p.Color('blue'))
+            screen.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
+            s.fill(p.Color('yellow'))
+            for move in valid_moves:
+                if move.startCol == c and move.startRow == r:
+                    screen.blit(s, (move.endCol * SQ_SIZE, move.endRow * SQ_SIZE))
+
+
+def draw_game_state(screen, gs, validMoves, sqSelected):
     drawboard(screen)
+    highlightsquares(screen, gs, validMoves, sqSelected)
     draw_pieces(screen, gs.board)
+
+
+def animate_moves(move, screen, board, clock):
+    global colors
+    # coords = [] #list of coords that the animation will move through
+    dR = move.endRow - move.startRow
+    dC = move.endCol - move.startCol
+    fps = 10
+    frame_count = (abs(dR) + abs(dC)) * fps
+    for frame in range(frame_count + 1):
+        r, c = (move.startRow + dR * frame / frame_count, move.startCol+ dC * frame / frame_count)
+        drawboard(screen)
+        draw_pieces(screen, board)
+        color = colors[(move.endRow + move.endCol) % 2]
+        endsquare = p.Rect(move.endCol * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        p.draw.rect(screen, color, endsquare)
+        if move.pieceCaptured != '--':
+            screen.blit(IMAGES[move.pieceCaptured], endsquare)
+        screen.blit(IMAGES[move.pieceMoved], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+        p.display.flip()
+        clock.tick(60)
 
 
 def sgame():
@@ -61,10 +98,12 @@ def sgame():
     screen.fill(p.Color("white"))
     gs = chessEngine.GameState()
     validMoves = gs.getValidMoves()
+    animate = False
     moveMade = False  # flag variable for when a move is made
     load_images()
     sqSelected = ()
     playerClicks = []
+    game_over = False
     while running:
 
         for event in p.event.get():
@@ -87,6 +126,7 @@ def sgame():
                         if move == validMoves[i]:
                             gs.makeMove(validMoves[i])
                             moveMade = True
+                            animate = True
                             sqSelected = ()  # reset to default
                             playerClicks = []  # reset to default
                     if not moveMade:
@@ -96,15 +136,30 @@ def sgame():
                 if event.key == p.K_z:
                     gs.undoMove()
                     moveMade = True
-                elif event.key == p.K_ESCAPE:
+                    animate = False
+
+                if event.key == p.K_r:
+                    gs = chessEngine.GameState()
+                    validMoves = gs.getValidMoves()
+                    sqSelected = ()
+                    playerClicks = []
+                    moveMade = False
+                    animate = False
+
+                if event.key == p.K_ESCAPE:
                     running = False
                     main_menu()
 
+
+
         if moveMade:
+            if animate:
+                animate_moves(gs.moveLog[-1], screen, gs.board, clock)
             validMoves = gs.getValidMoves()
             moveMade = False
+            animate = False
 
-        draw_game_state(screen, gs)
+        draw_game_state(screen, gs, validMoves, sqSelected)
         clock.tick(15)
 
         p.display.flip()
