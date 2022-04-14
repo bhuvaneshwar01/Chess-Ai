@@ -13,6 +13,7 @@ class GameState:
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ])
+
         self.moveFunctions = {
             'p': self.getPawnMoves,
             'R': self.getRookMoves,
@@ -50,7 +51,7 @@ class GameState:
 
         # pawn promotion
         if move.pawnPromotion:
-            promotedPiece = input("Promot to Q, R, B, or N : ")
+            promotedPiece = "Q"
             self.board[move.endRow][move.endCol] = move.pieceMoved[0] + promotedPiece
 
         # castle moves
@@ -458,11 +459,10 @@ class GameState:
             return
         if (self.whiteToMove and self.current_castling_rights.wks) or (
                 not self.whiteToMove and self.current_castling_rights.bks):
-            self.getKingSideCastleMoves(r,c,moves)
+            self.getKingSideCastleMoves(r, c, moves)
         if (self.whiteToMove and self.current_castling_rights.wqs) or (
                 not self.whiteToMove and self.current_castling_rights.bqs):
-            self.getQueenSideCastleMoves(r,c,moves)
-
+            self.getQueenSideCastleMoves(r, c, moves)
 
     def getKingSideCastleMoves(self, r, c, moves):
         if self.board[r][c + 1] == '--' and self.board[r][c + 2] == '--':

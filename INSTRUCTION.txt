@@ -1,0 +1,4 @@
+1) download chess-ai folder
+2) activate the virtual environment throunh command : venv\Scripts\activate (windows command prompt , not working on powershell)
+3) cd chess
+4) run the program : python chessMain.py
