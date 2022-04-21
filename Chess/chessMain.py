@@ -3,6 +3,7 @@ import sys
 import pygame as p
 
 import chessAI_alpha_beta
+
 import chessEngine
 
 p.init()
@@ -127,11 +128,12 @@ def active_player(whiteToMove, score):
     z = font1.render("[Z]      - Undo Moves", True, (255, 255, 255))
     r = font1.render("[R]      - Redo Moves", True, (255, 255, 255))
     e = font1.render("[Esc]    - To Main Menu", True, (255, 255, 255))
-    s = font1.render("Score : " + str(round(score, 1)), True, (255, 255, 255), (101, 33, 33))
+    s = font.render("Score : " + str(round(score, 1)), True, (255, 255, 255), (101, 33, 33))
     screen.blit(r, (530, 160))
     screen.blit(z, (530, 210))
     screen.blit(e, (530, 270))
-    screen.blit(s, (530, 330), None)
+    score_rect = s.get_rect(center=(WIDTH + 100,HEIGHT - 100))
+    screen.blit(s, score_rect)
 
 
 def alpha_beta():
@@ -145,7 +147,7 @@ def alpha_beta():
     sqSelected = ()
     playerClicks = []
     game_over = False
-    playerOne = False  # if a human is playing white then true, otherwise False for AI
+    playerOne = True  # if a human is playing white then true, otherwise False for AI
     playerTwo = False
 
     while run:

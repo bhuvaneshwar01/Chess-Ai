@@ -65,7 +65,7 @@ class GameState:
 
         # en passant moves
         if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
-            self.enpassantPossible = ((move.endRow + move.startRow) // 2, move.endCol)
+            self.enpassantPossible = ((move.endRow + move.startRow) // 2, move.startCol)
         else:
             self.enpassantPossible = ()
         if move.enPassant:
@@ -125,6 +125,9 @@ class GameState:
                     self.board[move.endRow][move.endCol - 2] = self.board[move.endRow][move.endCol + 1]
                     self.board[move.endRow][move.endCol + 1] = '--'
 
+            self.checkMate = False
+            self.staleMate = False
+
     def getValidMoves(self):
         moves = []
         temp_castle_rights = CastleRights(self.current_castling_rights.wks, self.current_castling_rights.bks,
@@ -178,16 +181,9 @@ class GameState:
             self.staleMate = False
 
         self.current_castling_rights = temp_castle_rights
+
         return moves
 
-    def inCheck(self):
-        """
-        Determine if a current player is in check
-        """
-        if self.whiteToMove:
-            return self.squareUndarAttack(self.whiteKingLocation[0], self.whiteKingLocation[1])
-        else:
-            return self.squareUnderAttack(self.blackKingLocation[0], self.blackKingLocation[1])
 
     def checkForPinsAndChecks(self):
         pins = []  # square where the allied pinned piece is and directions pinned from
@@ -465,14 +461,17 @@ class GameState:
             self.getQueenSideCastleMoves(r, c, moves)
 
     def getKingSideCastleMoves(self, r, c, moves):
-        if self.board[r][c + 1] == '--' and self.board[r][c + 2] == '--':
-            if not self.squareUndarAttack(r, c + 1) and not self.squareUndarAttack(r, c + 2):
-                moves.append(Move((r, c), (r, c + 2), self.board, castle=True))
+        if 0 <= r < 8 and 0 <= c + 2 < 8 and 0 <= c + 1 < 8:
+            if self.board[r][c + 1] == '--' and self.board[r][c + 2] == '--':
+                if not self.squareUndarAttack(r, c + 1) and not self.squareUndarAttack(r, c + 2):
+                    moves.append(Move((r, c), (r, c + 2), self.board, castle=True))
 
     def getQueenSideCastleMoves(self, r, c, moves):
-        if self.board[r][c - 1] == '--' and self.board[r][c - 2] == '--' and self.board[r][c - 3] == '--':
-            if not self.squareUndarAttack(r, c - 1) and not self.squareUndarAttack(r, c - 2):
-                moves.append(Move((r, c), (r, c - 2), self.board, castle=True))
+        if 0 <= r < 8 and 0 <= c - 2 < 8 and 0 <= c - 1 < 8 and 0 <= c - 3 < 8 and self.board[r][c - 1] == '--' and \
+                self.board[r][c - 2] == '--' and self.board[r][c - 3] == '--' and \
+                not self.squareUndarAttack(r,c - 1) and \
+                not self.squareUndarAttack(r, c - 2):
+            moves.append(Move((r, c), (r, c - 2), self.board, castle=True))
 
 
 class CastleRights():
