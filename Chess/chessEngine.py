@@ -110,11 +110,7 @@ class GameState:
 
             # give back castle rights if move took them away
             self.castleRightsLog.pop()
-            castleRights = self.castleRightsLog[-1]
-            self.whiteCastleKingside = castleRights.wks
-            self.blackCastleKingside = castleRights.bks
-            self.whiteCastleQueenside = castleRights.wqs
-            self.blackCastleQueenside = castleRights.wqs
+            self.current_castling_rights = self.castleRightsLog[-1]
 
             # undo castle
             if move.castle:
