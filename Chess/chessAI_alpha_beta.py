@@ -107,6 +107,7 @@ def findBestMoves(gs, validmoves):
     bestMove = None
     random.shuffle(validmoves)
     s = findAlphaBeta(gs, validmoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
+    print(bestMove.moveID)
     return bestMove
 
 

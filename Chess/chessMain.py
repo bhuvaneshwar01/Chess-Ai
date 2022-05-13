@@ -6,6 +6,10 @@ import chessAI_alpha_beta
 
 import chessEngine
 
+from tkinter import *
+
+from tkinter import messagebox
+
 p.init()
 
 clock = p.time.Clock()
@@ -161,25 +165,29 @@ def alpha_beta():
             elif event.type == p.MOUSEBUTTONDOWN:
                 if not game_over and humanTurn:
                     location = p.mouse.get_pos()
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
-                    if sqSelected == (row, col):  # if same place clicked twice
-                        sqSelected = ()  # deselect
-                        playerClicks = []  # Clear the player click
+                    if location[0] >= 0 and location[0] < 512 and location[1] >= 0 and location[1] < 512:
+                        col = location[0] // SQ_SIZE
+                        row = location[1] // SQ_SIZE
+                        if sqSelected == (row, col):  # if same place clicked twice
+                            sqSelected = ()  # deselect
+                            playerClicks = []  # Clear the player click
+                        else:
+                            sqSelected = (row, col)
+                            playerClicks.append(sqSelected)
+                        if len(playerClicks) == 2:
+                            move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                            for i in range(len(validMoves)):
+                                if move == validMoves[i]:
+                                    gs.makeMove(validMoves[i])
+                                    moveMade = True
+                                    animate = True
+                                    sqSelected = ()  # reset to default
+                                    playerClicks = []  # reset to default
+                            if not moveMade:
+                                playerClicks = [sqSelected]
                     else:
-                        sqSelected = (row, col)
-                        playerClicks.append(sqSelected)
-                    if len(playerClicks) == 2:
-                        move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
-                        for i in range(len(validMoves)):
-                            if move == validMoves[i]:
-                                gs.makeMove(validMoves[i])
-                                moveMade = True
-                                animate = True
-                                sqSelected = ()  # reset to default
-                                playerClicks = []  # reset to default
-                        if not moveMade:
-                            playerClicks = [sqSelected]
+                        Tk().wm_withdraw()
+                        messagebox.showinfo("Alert","Click within chessboard!")
 
             elif event.type == p.KEYDOWN:
                 if event.key == p.K_z:
@@ -280,25 +288,29 @@ def mgame():
             elif event.type == p.MOUSEBUTTONDOWN:
                 if not game_over:
                     location = p.mouse.get_pos()
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
-                    if sqSelected == (row, col):  # if same place clicked twice
-                        sqSelected = ()  # deselect
-                        playerClicks = []  # Clear the player click
+                    if location[0] >= 0 and location[0] < 512 and location[1] >= 0 and location[1] < 512:
+                        col = location[0] // SQ_SIZE
+                        row = location[1] // SQ_SIZE
+                        if sqSelected == (row, col):  # if same place clicked twice
+                            sqSelected = ()  # deselect
+                            playerClicks = []  # Clear the player click
+                        else:
+                            sqSelected = (row, col)
+                            playerClicks.append(sqSelected)
+                        if len(playerClicks) == 2:
+                            move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                            for i in range(len(validMoves)):
+                                if move == validMoves[i]:
+                                    gs.makeMove(validMoves[i])
+                                    moveMade = True
+                                    animate = True
+                                    sqSelected = ()  # reset to default
+                                    playerClicks = []  # reset to default
+                            if not moveMade:
+                                playerClicks = [sqSelected]
                     else:
-                        sqSelected = (row, col)
-                        playerClicks.append(sqSelected)
-                    if len(playerClicks) == 2:
-                        move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
-                        for i in range(len(validMoves)):
-                            if move == validMoves[i]:
-                                gs.makeMove(validMoves[i])
-                                moveMade = True
-                                animate = True
-                                sqSelected = ()  # reset to default
-                                playerClicks = []  # reset to default
-                        if not moveMade:
-                            playerClicks = [sqSelected]
+                        Tk().wm_withdraw()
+                        messagebox.showinfo("Alert","Click within chessboard!")
 
             elif event.type == p.KEYDOWN:
                 if event.key == p.K_z:
