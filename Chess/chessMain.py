@@ -1,17 +1,100 @@
 import sys
 
+import chess
+
 import pygame as p
 
+import os
+
+import tensorflow
+
 import chessAI_alpha_beta
+
+# import chessAI_nn
+
+import numpy as np
 
 import chessEngine
 
 from tkinter import *
 
 from tkinter import messagebox
+from keras.models import Input,Model
+from keras.layers import Dense,Flatten,Reshape
+from keras.layers.convolutional import Conv2D
+from keras.callbacks import EarlyStopping
+from keras.models import load_model
+from board_conversion import *
+from chessEngine import *
+import chess
+import random
+
+
+
+class NeuralNetwork():
+    def __init__(self):
+        self.optimizer = 'Adam'
+        self.loss = 'categorical_crossentropy'
+
+    def define(self):
+        input_layer = Input(shape=(8, 8, 12))
+        x = Conv2D(filters=64, kernel_size=2, strides=(2, 2))(input_layer)
+        x = Conv2D(filters=128, kernel_size=2, strides=(2, 2))(x)
+        x = Conv2D(filters=256, kernel_size=2, strides=(2, 2))(x)
+        x = Flatten()(x)
+
+        x = Dense(4096, activation='softmax')(x)
+        output = Reshape((1, 64, 64))(x)
+
+        model = Model(inputs=input_layer, outputs=output)
+        model.compile(optimizer=self.optimzier, loss=self.loss)
+        self.model = model
+
+    def train(self, X, y, epochs, EarlyStop=True):
+        if EarlyStop:
+            es = EarlyStopping(monitor='loss')
+
+        self.model.fit(X, y, epochs=epochs, callbacks=[es])
+        self.model.save('chess_model')
+
+    def predict(self, board, side):
+        model = load_model("chess_model")
+        translated = translate_board(board)
+        move_matrix = model(translated.reshape(1, 8, 8, 12))[0][0]
+
+        move_matrix = filter_legal_moves(board, move_matrix)
+        move = np.unravel_index(np.argmax(move_matrix, axis=None), move_matrix.shape)
+        move = chess.Move(move[0], move[1])
+        return move, 1
+
+
+
+class ChessEngine():
+
+    def __init__(self, algorithms=[NeuralNetwork]):
+        self.algorithms = algorithms
+
+    def generate_move(self, board, side):
+        moves = []
+        effes = []
+        for algorithm in self.algorithms:
+            move, effe = algorithm().predict(board, side)
+            moves.append(move)
+            effes.append(effe)
+
+        effes = np.array(effes)
+        idx = np.argmax(effes)
+
+        final_move = moves[idx]
+        print(self.algorithms[idx])
+        print(effes)
+        return final_move
 
 p.init()
 
+
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 clock = p.time.Clock()
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -42,7 +125,7 @@ def load_images():
 
 def drawboard(screen):
     global colors
-    colors = [p.Color((92, 64, 51)), p.Color((186, 140, 99))]
+    colors = [ p.Color((186, 140, 99)),p.Color((92, 64, 51))]
 
     for r in range(DIMENSION):
         for c in range(DIMENSION):
@@ -139,6 +222,59 @@ def active_player(whiteToMove, score):
     score_rect = s.get_rect(center=(WIDTH + 100,HEIGHT - 100))
     screen.blit(s, score_rect)
 
+def boardToFen(board):
+    a = np.char.replace(board, "bR", "r")
+    a = np.char.replace(a, "bN", "n")
+    a = np.char.replace(a, "bB", "b")
+    a = np.char.replace(a, "bQ", "q")
+    a = np.char.replace(a, "bK", "k")
+    a = np.char.replace(a, "bp", "p")
+
+    a = np.char.replace(a, "wN", "N")
+    a = np.char.replace(a, "wB", "B")
+    a = np.char.replace(a, "wQ", "Q")
+    a = np.char.replace(a, "wK", "K")
+    a = np.char.replace(a, "wp", "P")
+    a = np.char.replace(a, "wR", "R")
+    a = np.char.replace(a, "--", "")
+
+    fen = ""
+    RANK_SEPERATOR = "/"
+    for rank in range(8):
+        empty = 0
+        rankFen = ""
+        for file in range(8):
+            if len(a[rank][file]) == 0:
+                empty = empty + 1
+            else:
+                if empty != 0:
+                    rankFen += str(empty)
+                rankFen += a[rank][file]
+                empty = 0
+        if empty != 0:
+            rankFen += str(empty)
+        fen += rankFen
+        if not (rank == len(board) - 1):
+            fen += RANK_SEPERATOR
+        else:
+            fen += " "
+    fen += " b"
+    return fen
+
+
+def compare_strings(str1, str2):
+    count1 = 0
+    count2 = 0
+
+    for i in range(len(str1)):
+        if str1[i] >= "0" and str1[i] <= "9":
+            count1 += 1
+
+    for i in range(len(str2)):
+        if str2[i] >= "0" and str2[i] <= "9":
+            count2 += 1
+
+    return count1 == count2
 
 def alpha_beta():
     run = True
@@ -179,6 +315,7 @@ def alpha_beta():
                             for i in range(len(validMoves)):
                                 if move == validMoves[i]:
                                     gs.makeMove(validMoves[i])
+                                    print(validMoves[i].getChessNotation())
                                     moveMade = True
                                     animate = True
                                     sqSelected = ()  # reset to default
@@ -243,7 +380,119 @@ def alpha_beta():
 
 
 def neural_network():
-    pass
+    run = True
+    screen.fill((101, 33, 33))
+    gs = chessEngine.GameState()
+    validMoves = gs.getValidMoves()
+    animate = False
+    moveMade = False  # flag variable for when a move is made
+    load_images()
+    sqSelected = ()
+    playerClicks = []
+    game_over = False
+    playerOne = True  # if a human is playing white then true, otherwise False for AI
+    playerTwo = False
+
+    while run:
+
+        humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
+
+        for event in p.event.get():
+            if event.type == p.QUIT:
+                p.quit()
+                sys.exit()
+            elif event.type == p.MOUSEBUTTONDOWN:
+                if not game_over and humanTurn:
+                    location = p.mouse.get_pos()
+                    if location[0] >= 0 and location[0] < 512 and location[1] >= 0 and location[1] < 512:
+                        col = location[0] // SQ_SIZE
+                        row = location[1] // SQ_SIZE
+                        if sqSelected == (row, col):  # if same place clicked twice
+                            sqSelected = ()  # deselect
+                            playerClicks = []  # Clear the player click
+                        else:
+                            sqSelected = (row, col)
+                            playerClicks.append(sqSelected)
+                        if len(playerClicks) == 2:
+                            move = chessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                            for i in range(len(validMoves)):
+                                if move == validMoves[i]:
+                                    gs.makeMove(validMoves[i])
+                                    print(validMoves[i].getChessNotation())
+                                    moveMade = True
+                                    animate = True
+                                    sqSelected = ()  # reset to default
+                                    playerClicks = []  # reset to default
+                            if not moveMade:
+                                playerClicks = [sqSelected]
+                    else:
+                        Tk().wm_withdraw()
+                        messagebox.showinfo("Alert", "Click within chessboard!")
+
+            elif event.type == p.KEYDOWN:
+                if event.key == p.K_z:
+                    gs.undoMove()
+                    moveMade = True
+                    animate = False
+
+                if event.key == p.K_r:
+                    gs = chessEngine.GameState()
+                    validMoves = gs.getValidMoves()
+                    sqSelected = ()
+                    playerClicks = []
+                    moveMade = False
+                    animate = False
+
+                if event.key == p.K_ESCAPE:
+                    run = False
+                    main_menu()
+
+        # AI move finder
+        if not game_over and not humanTurn:
+            board = chess.Board(boardToFen(gs.board))
+            engine = ChessEngine(algorithms = [NeuralNetwork])
+            AIMove = engine.generate_move(board,side='Black')
+            print("AIMOVE : ",AIMove)
+            for i in range (len(validMoves)):
+                if str(validMoves[i].getChessNotation()) == str(AIMove):
+                    gs.makeMove(validMoves[i])
+                    moveMade = True
+                    animate = True
+            if moveMade == False:
+                print("Random moves")
+                AIMove = chessAI_alpha_beta.findAlphaBeta(validMoves)
+                gs.makeMove(AIMove)
+                moveMade = True
+                animate = True
+                if AIMove == None:
+                    AIMove = chessAI_alpha_beta.findRandomMove(validMoves)
+                    gs.makeMove(AIMove)
+                    moveMade = True
+                    animate = True
+
+        if moveMade:
+            if animate:
+                animate_moves(gs.moveLog[-1], screen, gs.board, clock)
+            validMoves = gs.getValidMoves()
+            moveMade = False
+            animate = False
+        score = chessAI_alpha_beta.scoreMaterial(gs)
+        draw_game_state(screen, gs, validMoves, sqSelected)
+
+        active_player(gs.whiteToMove, score)
+
+        if gs.checkMate:
+            game_over = True
+            if gs.whiteToMove:
+                draw_text(screen, "Black wins by checkMate")
+            else:
+                draw_text(screen, "White wins by checkMate")
+        elif gs.staleMate:
+            draw_text(screen, "Stalemate")
+
+        clock.tick(15)
+
+        p.display.flip()
 
 
 def sgame():
