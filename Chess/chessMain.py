@@ -111,7 +111,7 @@ def algo_text():
     s_player = font.render(" VS ALPHA BETA PRUNING - Press '1' Key", True, (255, 255, 255))
     m_player = font.render(" VS NEURAL NETWORK - Press '2' Key", True, (255, 255, 255))
     h_player = font.render(" VS HYBRID ALGORITHM - Press '3' Key", True, (255, 255, 255))
-    back = font.render(" BACK - Press '3' Key", True, (255, 255, 255))
+    back = font.render(" BACK - Press '4' Key", True, (255, 255, 255))
     screen.blit(s_player, (20, 100))
     screen.blit(m_player, (20, 130))
     screen.blit(h_player, (20, 160))
