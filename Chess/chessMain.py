@@ -15,6 +15,7 @@ import chessAI_alpha_beta
 import chessEngine
 from board_conversion import *
 from chessEngine import *
+from chessAI_hybrid import *
 
 p.init()
 
@@ -36,10 +37,11 @@ screen.fill(p.Color("white"))
 gs = chessEngine.GameState()
 validMoves = gs.getValidMoves()
 moveMade = False  # flag variable for when a move is made
-
 sqSelected = ()
 playerClicks = []
 
+RatingA = 1000
+RatingB = 1000
 
 def load_images():
     pieces = ["bR", "bN", "bB", "bQ", "bK", "bp", "wR", "wN", "wB", "wQ", "wK", "wp"]
@@ -148,214 +150,93 @@ def active_player(whiteToMove, score):
     score_rect = s.get_rect(center=(WIDTH + 100,HEIGHT - 100))
     screen.blit(s, score_rect)
 
-def boardToFen(board):
-    a = np.char.replace(board, "bR", "r")
-    a = np.char.replace(a, "bN", "n")
-    a = np.char.replace(a, "bB", "b")
-    a = np.char.replace(a, "bQ", "q")
-    a = np.char.replace(a, "bK", "k")
-    a = np.char.replace(a, "bp", "p")
+def aivsai():
+    run = True
+    screen.fill((101, 33, 33))
+    gs = chessEngine.GameState()
+    validMoves = gs.getValidMoves()
+    animate = False
+    moveMade = False  # flag variable for when a move is made
+    load_images()
+    sqSelected = ()
+    playerClicks = []
+    game_over = False
+    playerOne = False # if a human is playing white then true, otherwise False for AI
+    playerTwo = False
 
-    a = np.char.replace(a, "wN", "N")
-    a = np.char.replace(a, "wB", "B")
-    a = np.char.replace(a, "wQ", "Q")
-    a = np.char.replace(a, "wK", "K")
-    a = np.char.replace(a, "wp", "P")
-    a = np.char.replace(a, "wR", "R")
-    a = np.char.replace(a, "--", "")
+    while run:
+        for event in p.event.get():
+            if event.type == p.QUIT:
+                p.quit()
+                sys.exit()
 
-    fen = ""
-    RANK_SEPERATOR = "/"
-    for rank in range(8):
-        empty = 0
-        rankFen = ""
-        for file in range(8):
-            if len(a[rank][file]) == 0:
-                empty = empty + 1
+            elif event.type == p.KEYDOWN:
+                if event.key == p.K_r:
+                    gs = chessEngine.GameState()
+                    validMoves = gs.getValidMoves()
+                    sqSelected = ()
+                    playerClicks = []
+                    moveMade = False
+                    animate = False
+
+                if event.key == p.K_ESCAPE:
+                    run = False
+                    main_menu()
+
+        # AI move finder
+        if not game_over and gs.whiteToMove:
+            AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
+            print("AlphaBeta moves")
+            if AIMove == None:
+                print("Random moves")
+                AIMove = chessAI_alpha_beta.findRandomMove(validMoves)
+            gs.makeMove(AIMove)
+            moveMade = True
+            animate = True
+        elif not game_over:
+            AIMove = findBestMoves(gs, validMoves)
+            print("AIMOVE : ", AIMove)
+            for i in range(len(validMoves)):
+                if str(validMoves[i].getChessNotation()) == str(AIMove.getChessNotation()):
+                    gs.makeMove(validMoves[i])
+                    moveMade = True
+                    animate = True
+                    break
+            if moveMade == False:
+                print("Random moves")
+                AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
+                gs.makeMove(AIMove)
+                moveMade = True
+                animate = True
+                if AIMove == None:
+                    AIMove = chessAI_alpha_beta.findRandomMove(validMoves)
+                    gs.makeMove(AIMove)
+                    moveMade = True
+                    animate = True
+
+        if moveMade:
+            if animate:
+                animate_moves(gs.moveLog[-1], screen, gs.board, clock)
+            validMoves = gs.getValidMoves()
+            moveMade = False
+            animate = False
+        score = chessAI_alpha_beta.scoreMaterial(gs)
+        draw_game_state(screen, gs, validMoves, sqSelected)
+
+        active_player(gs.whiteToMove, score)
+
+        if gs.checkMate:
+            game_over = True
+            if gs.whiteToMove:
+                draw_text(screen, "Black wins by checkMate")
             else:
-                if empty != 0:
-                    rankFen += str(empty)
-                rankFen += a[rank][file]
-                empty = 0
-        if empty != 0:
-            rankFen += str(empty)
-        fen += rankFen
-        if not (rank == len(board) - 1):
-            fen += RANK_SEPERATOR
-        else:
-            fen += " "
-    fen += " b"
-    return fen
+                draw_text(screen, "White wins by checkMate")
+        elif gs.staleMate:
+            draw_text(screen, "Stalemate")
 
+        clock.tick(15)
 
-class NeuralNetwork():
-    def __init__(self):
-        self.optimizer = 'Adam'
-        self.loss = 'categorical_crossentropy'
-
-    def define(self):
-        input_layer = Input(shape=(8, 8, 12))
-        x = Conv2D(filters=64, kernel_size=2, strides=(2, 2))(input_layer)
-        x = Conv2D(filters=128, kernel_size=2, strides=(2, 2))(x)
-        x = Conv2D(filters=256, kernel_size=2, strides=(2, 2))(x)
-        x = Flatten()(x)
-
-        x = Dense(4096, activation='softmax')(x)
-        output = Reshape((1, 64, 64))(x)
-
-        model = Model(inputs=input_layer, outputs=output)
-        model.compile(optimizer=self.optimzier, loss=self.loss)
-        self.model = model
-
-    def train(self, X, y, epochs, EarlyStop=True):
-        if EarlyStop:
-            es = EarlyStopping(monitor='loss')
-
-        self.model.fit(X, y, epochs=epochs, callbacks=[es])
-        self.model.save('chess_model')
-
-    def predict(self, board, side):
-        model = load_model("chess_model")
-        translated = translate_board(board)
-        move_matrix = model(translated.reshape(1, 8, 8, 12))[0][0]
-
-        move_matrix = filter_legal_moves(board, move_matrix)
-        move = np.unravel_index(np.argmax(move_matrix, axis=None), move_matrix.shape)
-        move = chess.Move(move[0], move[1])
-        return move, 1
-
-
-def material_counter(board):
-    material = np.array([0, 0])
-    translated_board = board_matrix(board)
-    for piece in translated_board:
-        material += value_dict[piece]
-    return material
-
-
-def pos_cont(board):
-    boards = []
-    legal_moves = list(board.legal_moves)
-    for move in legal_moves:
-        copy_board = board.copy()
-        copy_board.push(move)
-        boards.append(copy_board)
-    return boards, legal_moves
-
-
-class Node:
-    def __init__(self, board, move, parent):
-        self.board = board
-        self.move = move
-        self.parent_node = parent
-        self.child_nodes = []
-        self.utility = [0, 0]
-        self.func = None
-
-    def evaluate(self, idx):
-        if len(self.child_nodes) == 0:
-            material = material_counter(self.board)
-            white = material[0]
-            black = material[1]
-            if idx == 0:
-                self.utility = black - white
-            else:
-                self.utility = white - black
-        else:
-            child_util = [node.utility for node in self.child_nodes]
-            self.utility = self.func(child_util)
-
-    def extend(self):
-        continuations, legal_moves = pos_cont(self.board)
-        for i in range(len(continuations)):
-            self.child_nodes.append(Node(continuations[i], legal_moves[i], self))
-
-
-class MinMaxTree():
-    def __init__(self):
-        pass
-
-    def create_root_node(self, board):
-        root_node = Node(board, None, None)
-        self.root_node = root_node
-
-    def construct(self, depth=2):
-        nodes = []
-        prev_gen = [self.root_node]
-
-        for i in range(depth):
-            new_gen = []
-            for parent_node in prev_gen:
-                parent_node.extend()
-                new_gen.extend(parent_node.child_nodes)
-            prev_gen = new_gen
-            nodes.append(prev_gen)
-
-        self.nodes = nodes
-        # self.function_list = np.array([[] + [max,min] for _ in range(depth//2)]).flatten()
-
-        function_list = []
-        if depth % 2 == 0:
-            funcs = [max, min]
-        else:
-            funcs = [min, max]
-        for i in range(depth):
-            func = funcs[i % 2]
-            function_list.append(func)
-        self.function_list = function_list
-
-        return self.root_node
-
-    def evaluate(self, side):
-        if side == 'White':
-            idx = 0
-        elif side == 'Black':
-            idx = 1
-
-        for i in range(len(self.nodes) - 1, -1, -1):
-            # print('Evaluating Node',i)
-            # print('Number of Nodes in layer',len(self.nodes[i]))
-            for node in self.nodes[i]:
-                node.func = self.function_list[i]
-                node.evaluate(idx)
-
-    def predict(self, board, side, depth=3):
-        func = np.argmax
-        self.create_root_node(board)
-        # print('Root Node Created')
-        self.construct(depth=depth)
-        # print('Tree Constructed')
-        self.evaluate(side)
-        # print('Evaluation Complete')
-        utilities = [node.utility for node in self.nodes[0]]
-        effe = func(utilities)
-        move = self.nodes[0][func(utilities)].move
-        if 'x' in board.san(move):
-            effe = 1
-        return move, effe
-
-
-class ChessEngine():
-
-    def __init__(self, algorithms=[MinMaxTree, NeuralNetwork]):
-        self.algorithms = algorithms
-
-    def generate_move(self, board, side):
-        moves = []
-        effes = []
-        for algorithm in self.algorithms:
-            move, effe = algorithm().predict(board, side)
-            moves.append(move)
-            effes.append(effe)
-
-        effes = np.array(effes)
-        idx = np.argmax(effes)
-
-        final_move = moves[idx]
-        print(self.algorithms[idx])
-        print(effes)
-        return final_move
-
+        p.display.flip()
 
 def alpha_beta():
     run = True
@@ -530,7 +411,7 @@ def neural_network():
 
         # AI move finder
         if not game_over and not humanTurn:
-            board = chess.Board(boardToFen(gs.board))
+            board = chess.Board(boardToFen(gs,gs.board))
             engine = NeuralNetwork()
             AIMove, effe = engine.predict(board, side='Black')
             print("AIMOVE : ", AIMove)
@@ -646,18 +527,17 @@ def hybrid_algorithm():
 
         # AI move finder
         if not game_over and not humanTurn:
-            board = chess.Board(boardToFen(gs.board))
-            engine = ChessEngine(algorithms=[MinMaxTree, NeuralNetwork])
-            AIMove = engine.generate_move(board, side='Black')
+            AIMove = findBestMoves(gs,validMoves)
             print("AIMOVE : ", AIMove)
             for i in range(len(validMoves)):
-                if str(validMoves[i].getChessNotation()) == str(AIMove):
+                if str(validMoves[i].getChessNotation()) == str(AIMove.getChessNotation()):
                     gs.makeMove(validMoves[i])
                     moveMade = True
                     animate = True
+                    break
             if moveMade == False:
                 print("Random moves")
-                AIMove = chessAI_alpha_beta.findAlphaBeta(validMoves)
+                AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
                 gs.makeMove(AIMove)
                 moveMade = True
                 animate = True
@@ -831,4 +711,5 @@ def main_menu():
 
 
 load_images()
-main_menu()
+# main_menu()
+aivsai()

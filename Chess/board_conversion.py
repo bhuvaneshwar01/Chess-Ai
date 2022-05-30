@@ -77,3 +77,43 @@ def filter_legal_moves(board,logits):
         filter_mask[from_square,to_square] = 1
     new_logits = logits*filter_mask
     return new_logits
+
+def boardToFen(gs,board):
+    a = np.char.replace(board, "bR", "r")
+    a = np.char.replace(a, "bN", "n")
+    a = np.char.replace(a, "bB", "b")
+    a = np.char.replace(a, "bQ", "q")
+    a = np.char.replace(a, "bK", "k")
+    a = np.char.replace(a, "bp", "p")
+
+    a = np.char.replace(a, "wN", "N")
+    a = np.char.replace(a, "wB", "B")
+    a = np.char.replace(a, "wQ", "Q")
+    a = np.char.replace(a, "wK", "K")
+    a = np.char.replace(a, "wp", "P")
+    a = np.char.replace(a, "wR", "R")
+    a = np.char.replace(a, "--", "")
+
+    fen = ""
+    RANK_SEPERATOR = "/"
+    for rank in range(8):
+        empty = 0
+        rankFen = ""
+        for file in range(8):
+            if len(a[rank][file]) == 0:
+                empty = empty + 1
+            else:
+                if empty != 0:
+                    rankFen += str(empty)
+                rankFen += a[rank][file]
+                empty = 0
+        if empty != 0:
+            rankFen += str(empty)
+        fen += rankFen
+        if not (rank == len(board) - 1):
+            fen += RANK_SEPERATOR
+        else:
+            fen += " "
+    side = 'w' if gs.whiteToMove else 'b'
+    fen += ' ' + side
+    return fen

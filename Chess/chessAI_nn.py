@@ -6,9 +6,6 @@ from keras.models import load_model
 from board_conversion import *
 from chessEngine import *
 import chess
-import random
-
-
 
 class NeuralNetwork():
     def __init__(self):
@@ -45,26 +42,3 @@ class NeuralNetwork():
         move = np.unravel_index(np.argmax(move_matrix, axis=None), move_matrix.shape)
         move = chess.Move(move[0], move[1])
         return move, 1
-
-
-
-class ChessEngine():
-
-    def __init__(self, algorithms=[NeuralNetwork]):
-        self.algorithms = algorithms
-
-    def generate_move(self, board, side):
-        moves = []
-        effes = []
-        for algorithm in self.algorithms:
-            move, effe = algorithm().predict(board, side)
-            moves.append(move)
-            effes.append(effe)
-
-        effes = np.array(effes)
-        idx = np.argmax(effes)
-
-        final_move = moves[idx]
-        print(self.algorithms[idx])
-        print(effes)
-        return final_move

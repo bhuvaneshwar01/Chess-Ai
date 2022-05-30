@@ -1,176 +1,146 @@
-
-from keras.models import Input,Model
-from keras.layers import Dense,Flatten,Reshape
-from keras.layers.convolutional import Conv2D
-from keras.callbacks import EarlyStopping
-from keras.models import load_model
-from board_conversion import *
+from chessAI_alpha_beta import *
+from chessAI_nn import *
 from chessEngine import *
-import chess
+from board_conversion import *
 
+import numpy as np
 
-class NeuralNetwork():
-    def __init__(self):
-        self.optimizer = 'Adam'
-        self.loss = 'categorical_crossentropy'
+pieceScore = {"K": 0, "Q": 9, "R": 5, "N": 3, "B": 3, "p": 1}
 
-    def define(self):
-        input_layer = Input(shape=(8, 8, 12))
-        x = Conv2D(filters=64, kernel_size=2, strides=(2, 2))(input_layer)
-        x = Conv2D(filters=128, kernel_size=2, strides=(2, 2))(x)
-        x = Conv2D(filters=256, kernel_size=2, strides=(2, 2))(x)
-        x = Flatten()(x)
+knight_score = np.array([
+    [0.0, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1, 0.0],
+    [0.1, 0.3, 0.5, 0.5, 0.5, 0.5, 0.3, 0.1],
+    [0.2, 0.5, 0.6, 0.65, 0.65, 0.6, 0.5, 0.2],
+    [0.2, 0.55, 0.65, 0.7, 0.7, 0.65, 0.55, 0.2],
+    [0.2, 0.5, 0.65, 0.7, 0.7, 0.65, 0.5, 0.2],
+    [0.2, 0.55, 0.6, 0.65, 0.65, 0.6, 0.55, 0.2],
+    [0.1, 0.3, 0.5, 0.55, 0.55, 0.5, 0.3, 0.1],
+    [0.0, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1, 0.0]
+])
 
-        x = Dense(4096, activation='softmax')(x)
-        output = Reshape((1, 64, 64))(x)
+bishop_score = np.array([
+    [0.0, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.0],
+    [0.2, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.2],
+    [0.2, 0.4, 0.5, 0.6, 0.6, 0.5, 0.4, 0.2],
+    [0.2, 0.5, 0.5, 0.6, 0.6, 0.5, 0.5, 0.2],
+    [0.2, 0.4, 0.6, 0.6, 0.6, 0.6, 0.4, 0.2],
+    [0.2, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.2],
+    [0.2, 0.5, 0.4, 0.4, 0.4, 0.4, 0.5, 0.2],
+    [0.0, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.0]
+])
 
-        model = Model(inputs=input_layer, outputs=output)
-        model.compile(optimizer=self.optimzier, loss=self.loss)
-        self.model = model
+rook_score = np.array([
+    [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25],
+    [0.5, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.5],
+    [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
+    [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
+    [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
+    [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
+    [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0],
+    [0.25, 0.25, 0.25, 0.5, 0.5, 0.25, 0.25, 0.25]
+])
 
-    def train(self, X, y, epochs, EarlyStop=True):
-        if EarlyStop:
-            es = EarlyStopping(monitor='loss')
+queen_score = np.array([
+    [0.0, 0.2, 0.2, 0.3, 0.3, 0.2, 0.2, 0.0],
+    [0.2, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.2],
+    [0.2, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.2],
+    [0.3, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.3],
+    [0.4, 0.4, 0.5, 0.5, 0.5, 0.5, 0.4, 0.3],
+    [0.2, 0.5, 0.5, 0.5, 0.5, 0.5, 0.4, 0.2],
+    [0.2, 0.4, 0.5, 0.4, 0.4, 0.4, 0.4, 0.2],
+    [0.0, 0.2, 0.2, 0.3, 0.3, 0.2, 0.2, 0.0]
+])
 
-        self.model.fit(X, y, epochs=epochs, callbacks=[es])
-        self.model.save('chess_model')
+pawn_score = np.array([
+    [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+    [0.3, 0.3, 0.4, 0.5, 0.5, 0.4, 0.3, 0.3],
+    [0.25, 0.25, 0.3, 0.45, 0.45, 0.3, 0.25, 0.25],
+    [0.2, 0.2, 0.2, 0.4, 0.4, 0.2, 0.2, 0.2],
+    [0.25, 0.15, 0.1, 0.2, 0.2, 0.1, 0.15, 0.25],
+    [0.25, 0.3, 0.3, 0.0, 0.0, 0.3, 0.3, 0.25],
+    [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
+])
 
-    def predict(self, board, side):
-        model = load_model("chess_model")
-        translated = translate_board(board)
+piece_position_scores = {
+    "wN": knight_score,
+    "bN": knight_score[::-1],
+    "wB": bishop_score,
+    "bB": bishop_score[::-1],
+    "wQ": queen_score,
+    "bQ": queen_score[::-1],
+    "wR": rook_score,
+    "bR": rook_score[::-1],
+    "wp": pawn_score,
+    "bp": pawn_score[::-1],
+}
 
-        move_matrix = model(translated.reshape(1, 8, 8, 12))[0][0]
-        move_matrix = filter_legal_moves(board, move_matrix)
-        move = np.unravel_index(np.argmax(move_matrix, axis=None), move_matrix.shape)
-        move = chess.Move(move[0], move[1])
-        return move, 1
+CHECKMATE = 1000
+STALEMATE = 0
+DEPTH = 1
 
-def material_counter(board):
-    material = np.array([0,0])
-    translated_board = board_matrix(board)
-    for piece in translated_board:
-        material += value_dict[piece]
-    return material
-
-def pos_cont(board):
-    boards = []
-    legal_moves = list(board.legal_moves)
-    for move in legal_moves:
-        copy_board = board.copy()
-        copy_board.push(move)
-        boards.append(copy_board)
-    return boards,legal_moves
-
-
-class Node:
-    def __init__(self, board, move, parent):
-        self.board = board
-        self.move = move
-        self.parent_node = parent
-        self.child_nodes = []
-        self.utility = [0, 0]
-        self.func = None
-
-    def evaluate(self, idx):
-        if len(self.child_nodes) == 0:
-            material = material_counter(self.board)
-            white = material[0]
-            black = material[1]
-            if idx == 0:
-                self.utility = black - white
-            else:
-                self.utility = white - black
+def scoreMaterial(game_state):
+    if game_state.checkMate:
+        if game_state.whiteToMove:
+            return -CHECKMATE  # black win
         else:
-            child_util = [node.utility for node in self.child_nodes]
-            self.utility = self.func(child_util)
+            return CHECKMATE  # white win
+    elif game_state.staleMate:
+        return STALEMATE
+    score = 0
+    for r in range(len(game_state.board)):
+        for c in range(len(game_state.board[r])):
+            piece = game_state.board[r][c]
+            if piece != "--":
+                piece_position_score = 0
+                if piece[1] != "K":
+                    piece_position_score = piece_position_scores[piece][r][c]
+                if piece[0] == "w":
+                    score += pieceScore[piece[1]] + piece_position_score
+                if piece[0] == "b":
+                    score -= pieceScore[piece[1]] + piece_position_score
+    return score
 
-    def extend(self):
-        continuations, legal_moves = pos_cont(self.board)
-        for i in range(len(continuations)):
-            self.child_nodes.append(Node(continuations[i], legal_moves[i], self))
+def findAlphaBeta(gs, valid_moves, depth, alpha, beta, turn_multiplayer):
+    global bestMove
+    side = 'White' if gs.whiteToMove else 'Black'
+    if depth == 0:
+        board = chess.Board(boardToFen(gs, gs.board))
+        engine = NeuralNetwork()
+        flag = False
+        move =  engine.predict(board,side)
+        for i in range(len(valid_moves)):
+            if str(valid_moves[i].getChessNotation()) == str(move):
+                gs.makeMove(valid_moves[i])
+                flag = True
+                break
 
+        t = turn_multiplayer * scoreMaterial(gs)
+        if flag:
+            gs.undoMove()
+        return t
 
-class MinMaxTree():
-    def __init__(self):
-        pass
-
-    def create_root_node(self, board):
-        root_node = Node(board, None, None)
-        self.root_node = root_node
-
-    def construct(self, depth=2):
-        nodes = []
-        prev_gen = [self.root_node]
-
-        for i in range(depth):
-            new_gen = []
-            for parent_node in prev_gen:
-                parent_node.extend()
-                new_gen.extend(parent_node.child_nodes)
-            prev_gen = new_gen
-            nodes.append(prev_gen)
-
-        self.nodes = nodes
-        # self.function_list = np.array([[] + [max,min] for _ in range(depth//2)]).flatten()
-
-        function_list = []
-        if depth % 2 == 0:
-            funcs = [max, min]
-        else:
-            funcs = [min, max]
-        for i in range(depth):
-            func = funcs[i % 2]
-            function_list.append(func)
-        self.function_list = function_list
-
-        return self.root_node
-
-    def evaluate(self, side):
-        if side == 'White':
-            idx = 0
-        elif side == 'Black':
-            idx = 1
-
-        for i in range(len(self.nodes) - 1, -1, -1):
-            # print('Evaluating Node',i)
-            # print('Number of Nodes in layer',len(self.nodes[i]))
-            for node in self.nodes[i]:
-                node.func = self.function_list[i]
-                node.evaluate(idx)
-
-    def predict(self, board, side, depth=3):
-        func = np.argmax
-        self.create_root_node(board)
-        # print('Root Node Created')
-        self.construct(depth=depth)
-        # print('Tree Constructed')
-        self.evaluate(side)
-        # print('Evaluation Complete')
-        utilities = [node.utility for node in self.nodes[0]]
-        effe = func(utilities)
-        move = self.nodes[0][func(utilities)].move
-        if 'x' in board.san(move):
-            effe = 1
-        return move, effe
+    max_score = -CHECKMATE
+    for move in valid_moves:
+        gs.makeMove(move)
+        bestMoves = gs.getValidMoves()
+        score = -findAlphaBeta(gs, bestMoves, depth - 1, -beta, -alpha, -turn_multiplayer)
+        if score > max_score:
+            max_score = score
+            if depth == DEPTH:
+                bestMove = move
+        gs.undoMove()
+        if max_score > alpha:
+            alpha = max_score
+        if alpha >= beta:
+            break
+    return max_score
 
 
-class ChessEngine():
-
-    def __init__(self, algorithms=[MinMaxTree, NeuralNetwork]):
-        self.algorithms = algorithms
-
-    def generate_move(self, board, side):
-        moves = []
-        effes = []
-        for algorithm in self.algorithms:
-            move, effe = algorithm().predict(board, side)
-            moves.append(move)
-            effes.append(effe)
-
-        effes = np.array(effes)
-        idx = np.argmax(effes)
-
-        final_move = moves[idx]
-        print(self.algorithms[idx])
-        print(effes)
-        return final_move
+def findBestMoves(gs, validmoves):
+    global bestMove
+    bestMove = None
+    random.shuffle(validmoves)
+    s = findAlphaBeta(gs, validmoves, DEPTH, -CHECKMATE, CHECKMATE, 1 if gs.whiteToMove else -1)
+#    print(bestMove.moveID)
+    return bestMove
