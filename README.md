@@ -10,6 +10,12 @@ Instruction
 
 Enjoy the game!
 
+System architecture
+
+![image](https://user-images.githubusercontent.com/64410018/172865726-f521ad6e-5254-4cd4-b085-2ca28100e495.png)
+
+
+
 OUTPUT
 
 On entering the game, the user will need to choose the type of game that he/she wants to play. It includes Human Vs Human or Human vs Computer.
@@ -50,3 +56,8 @@ Reference:
 
 1) https://www.youtube.com/watch?v=EnYui0e73Rs&list=PLBwF487qi8MGU81nDGaeNE1EnNEPYWKY_
 2) https://github.com/victorsimrbt/chess_4096
+
+
+This project is a team work of Aadharsh Ram, Deepak Raj, Parusu Sunny and Bhuvaneshwar.
+
+For docs and info contact bhuvaneshwaran54@gmail.com
