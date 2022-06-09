@@ -1,5 +1,6 @@
 # Chess-Ai
-Chess-Ai for CIP
+This repo contains the code for the project done and submitted as part of course  CS6611 - Creative & Innovative Project and partial requirement for the degree of Bachelors of Engineering(Computer Science & Engineering).
+
 
 Instruction
 
