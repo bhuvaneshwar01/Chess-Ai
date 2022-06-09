@@ -17,9 +17,5 @@ def EloRating(Ra,Rb,K,d):
     print("Updated Ratings:-")
     print("Ra =", round(Ra, 6), " Rb =", round(Rb, 6))
 
-Ra = int(input("Enter Rating A : "))
-Rb = int(input("Enter Rating b : "))
-K = 20
-win = input("Win 'w/b' : ")
-d = 1 if win == 'w' else 0
-EloRating(Ra,Rb,K,d)
+
+K = 100

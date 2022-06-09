@@ -2,7 +2,8 @@ import os
 import sys
 from tkinter import *
 from tkinter import messagebox
-
+import warnings
+warnings.filterwarnings("ignore")
 import chess
 import pygame as p
 from keras.callbacks import EarlyStopping
@@ -16,7 +17,7 @@ import chessEngine
 from board_conversion import *
 from chessEngine import *
 from chessAI_hybrid import *
-
+from score import EloRating
 p.init()
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -186,16 +187,16 @@ def aivsai():
         # AI move finder
         if not game_over and gs.whiteToMove:
             AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
-            print("AlphaBeta moves")
+            # print("AlphaBeta moves")
             if AIMove == None:
-                print("Random moves")
+                # print("Random moves")
                 AIMove = chessAI_alpha_beta.findRandomMove(validMoves)
             gs.makeMove(AIMove)
             moveMade = True
             animate = True
         elif not game_over:
             AIMove = findBestMoves(gs, validMoves)
-            print("AIMOVE : ", AIMove)
+            # print("AIMOVE : ", AIMove)
             for i in range(len(validMoves)):
                 if str(validMoves[i].getChessNotation()) == str(AIMove.getChessNotation()):
                     gs.makeMove(validMoves[i])
@@ -203,7 +204,7 @@ def aivsai():
                     animate = True
                     break
             if moveMade == False:
-                print("Random moves")
+                # print("Random moves")
                 AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
                 gs.makeMove(AIMove)
                 moveMade = True
@@ -277,7 +278,7 @@ def alpha_beta():
                             for i in range(len(validMoves)):
                                 if move == validMoves[i]:
                                     gs.makeMove(validMoves[i])
-                                    print(validMoves[i].getChessNotation())
+                                    # print(validMoves[i].getChessNotation())
                                     moveMade = True
                                     animate = True
                                     sqSelected = ()  # reset to default
@@ -310,7 +311,7 @@ def alpha_beta():
         if not game_over and not humanTurn:
             AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
             if AIMove == None:
-                print("Random moves")
+                # print("Random moves")
                 AIMove = chessAI_alpha_beta.findRandomMove(validMoves)
             gs.makeMove(AIMove)
             moveMade = True
@@ -380,7 +381,7 @@ def neural_network():
                             for i in range(len(validMoves)):
                                 if move == validMoves[i]:
                                     gs.makeMove(validMoves[i])
-                                    print(validMoves[i].getChessNotation())
+                                    # print(validMoves[i].getChessNotation())
                                     moveMade = True
                                     animate = True
                                     sqSelected = ()  # reset to default
@@ -414,14 +415,14 @@ def neural_network():
             board = chess.Board(boardToFen(gs,gs.board))
             engine = NeuralNetwork()
             AIMove, effe = engine.predict(board, side='Black')
-            print("AIMOVE : ", AIMove)
+            # print("AIMOVE : ", AIMove)
             for i in range(len(validMoves)):
                 if str(validMoves[i].getChessNotation()) == str(AIMove):
                     gs.makeMove(validMoves[i])
                     moveMade = True
                     animate = True
             if moveMade == False:
-                print("Random moves")
+                # print("Random moves")
                 AIMove = chessAI_alpha_beta.findAlphaBeta(validMoves)
                 gs.makeMove(AIMove)
                 moveMade = True
@@ -496,7 +497,7 @@ def hybrid_algorithm():
                             for i in range(len(validMoves)):
                                 if move == validMoves[i]:
                                     gs.makeMove(validMoves[i])
-                                    print(validMoves[i].getChessNotation())
+                                    # print(validMoves[i].getChessNotation())
                                     moveMade = True
                                     animate = True
                                     sqSelected = ()  # reset to default
@@ -528,7 +529,7 @@ def hybrid_algorithm():
         # AI move finder
         if not game_over and not humanTurn:
             AIMove = findBestMoves(gs,validMoves)
-            print("AIMOVE : ", AIMove)
+            # print("AIMOVE : ", AIMove)
             for i in range(len(validMoves)):
                 if str(validMoves[i].getChessNotation()) == str(AIMove.getChessNotation()):
                     gs.makeMove(validMoves[i])
@@ -536,7 +537,7 @@ def hybrid_algorithm():
                     animate = True
                     break
             if moveMade == False:
-                print("Random moves")
+                # print("Random moves")
                 AIMove = chessAI_alpha_beta.findBestMoves(gs, validMoves)
                 gs.makeMove(AIMove)
                 moveMade = True
@@ -606,6 +607,9 @@ def mgame():
     sqSelected = ()
     playerClicks = []
     game_over = False
+    Ra = int(input("Enter Rating A : "))
+    Rb = int(input("Enter Rating b : "))
+    K = 100
     while running:
 
         for event in p.event.get():
@@ -672,8 +676,12 @@ def mgame():
             game_over = True
             if gs.whiteToMove:
                 draw_text(screen, "Black wins by checkMate")
+                d = 0
+                EloRating(Ra, Rb, 100, 0)
             else:
                 draw_text(screen, "White wins by checkMate")
+                d = 0
+                EloRating(Ra, Rb, 100, 1)
         elif gs.staleMate:
             draw_text(screen, "Stalemate")
 
@@ -711,5 +719,5 @@ def main_menu():
 
 
 load_images()
-# main_menu()
-aivsai()
+main_menu()
+# aivsai()

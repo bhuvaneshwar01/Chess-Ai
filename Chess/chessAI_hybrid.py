@@ -2,7 +2,8 @@ from chessAI_alpha_beta import *
 from chessAI_nn import *
 from chessEngine import *
 from board_conversion import *
-
+import warnings
+warnings.filterwarnings("ignore")
 import numpy as np
 
 pieceScore = {"K": 0, "Q": 9, "R": 5, "N": 3, "B": 3, "p": 1}

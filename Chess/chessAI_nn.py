@@ -6,6 +6,8 @@ from keras.models import load_model
 from board_conversion import *
 from chessEngine import *
 import chess
+import warnings
+warnings.filterwarnings("ignore")
 
 class NeuralNetwork():
     def __init__(self):
