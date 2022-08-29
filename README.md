@@ -32,12 +32,7 @@ Initial state
 
 ![image](https://user-images.githubusercontent.com/64410018/172863552-2ed6f337-9bce-432e-b3b4-06cb14cd00ff.png)
 
-
-after moving 5-6 moves
-
-![image](https://user-images.githubusercontent.com/64410018/172863628-0a62611c-8927-4323-bc78-7cf7a8be842d.png)
-
-vs Neural network
+vs Neural network (after moving 5-6 moves)
 
 ![image](https://user-images.githubusercontent.com/64410018/172863747-65853d42-6fe3-4609-8ca5-cdf077c1a30b.png)
 
